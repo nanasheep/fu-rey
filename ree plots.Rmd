@@ -103,6 +103,19 @@ normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1)) + #normali
 normal_plot
 ```
 
+```{r normalized cement plot}
+normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1)) + #normalized spider plots all cements
+  geom_hline(aes(yintercept = 1, color = "red"), show.legend = FALSE) +
+  geom_point() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  scale_y_log10() +
+  theme(panel.grid.major = element_line(color = "gray")) +
+  ylab("ppm (log scale)") +
+  xlab("Element") +
+  facet_wrap(vars(Cement)) 
+normal_plot
+```
+
 ```{r normalized plot aio}
 normal_aio <- ggplot(normal, aes(x = element, y = Value, color = Sample)) + #attempt at making a single spider plot with all samples
   geom_point() +
