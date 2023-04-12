@@ -36,5 +36,19 @@ nmds
 ```
 
 ```{r prep data for plotting}
-data_scores = as.data.frame(scores(nmds))
+data_scores = as.data.frame(scores(nmds)$sites)
+data_scores$Sample = normalize$Sample
+data_scores$Cement = normalize$Cement
+```
+
+
+## Plot
+```{r}
+nmds_plot <- ggplot(data_scores, aes(x = NMDS1, y = NMDS2)) +
+  geom_point(aes(color = Cement)) +
+  theme(
+    panel.background = element_rect(fill = "black"),
+    legend.key = element_rect(fill = "black")
+  )
+nmds_plot
 ```
