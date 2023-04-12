@@ -1,0 +1,123 @@
+---
+title: "REE concentrations"
+output: html_document
+date: "2023-01-23"
+editor_options: 
+  chunk_output_type: console
+---
+
+#Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library("readxl")
+
+all_data <- read_excel("ree_data_r.xlsx")
+```
+
+#Data Tables
+
+```{r data wrangle rotate}
+rotate_data <- data.frame(t(all_data[-1]))
+colnames(rotate_data) <- all_data$Sample
+rotate_data <- tibble::rownames_to_column(rotate_data, "element")
+```
+
+```{r data wrangle ree only}
+ree_data <- all_data %>%
+  select("Sample", "Y_ppm", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_ppm",  "Gd_ppm","Dy_ppm", "Ho_ppm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm")
+ree_data <- data.frame(t(ree_data[-1]))
+colnames(ree_data) <- all_data$Sample
+ree_data <- tibble::rownames_to_column(ree_data, "element") %>%
+  mutate(element = fct_inorder(element))
+```
+
+```{r data wrangle pivot}
+ree_data2 <- ree_data %>%
+  pivot_longer(-element, names_to = "Sample", values_to = "Value")
+```
+
+```{r paas normalized pourmand et al 2012}
+attach(all_data)
+normalize <- all_data %>%
+  select("Sample", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_ppm",  "Gd_ppm","Dy_ppm", "Y_ppm",  "Ho_ppm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm") %>%
+  mutate(Y_normal = Y_ppm/27.31, La_normal = La_ppm/44.56, Ce_normal = Ce_ppm/88.25, Pr_normal = Pr_ppm/10.15, Nd_normal = Nd_ppm/37.32, Sm_normal = Sm_ppm/6.884, Eu_normal = Eu_ppm/1.215, Gd_normal = Gd_ppm/6.043, Dy_normal = Dy_ppm/5.325, Ho_normal = Ho_ppm/1.052, Er_normal = Er_ppm/3.075, Tm_normal = Tm_ppm/0.4510, Yb_normal = Yb_ppm/3.012, Lu_normal = Lu_ppm/0.4386) %>%
+    select("Sample", "La_normal", "Ce_normal", "Pr_normal", "Nd_normal", "Sm_normal", "Eu_normal",  "Gd_normal","Dy_normal", "Y_normal", "Ho_normal", "Er_normal", "Tm_normal", "Yb_normal", "Lu_normal")
+normal <- data.frame(t(normalize[-1]))
+colnames(normal) <- all_data$Sample
+normal <- tibble::rownames_to_column(normal, "element") %>%
+  mutate(element = fct_inorder(element)) %>%
+  pivot_longer(-element, names_to = "Sample", values_to = "Value")
+```
+
+```{r anomaly calculations}
+anomaly <- normalize %>%
+  mutate(
+    Ce_anomaly = Ce_normal/(Pr_normal^2/Nd_normal),
+    Y_Ho_ratio = Y_normal/Ho_normal,
+    Eu_anomaly = (2*Eu_normal)/(Sm_normal + Gd_normal),
+    BSI = (2*(Sm_normal + Gd_normal + Dy_normal)/3)/((La_normal +Pr_normal + Nd_normal)/3+(Ho_normal + Er_normal +Tm_normal +Yb_normal +Lu_normal)/5))
+```
+
+#Plots
+
+```{r single element all samples}
+ce_plot <- ggplot(all_data, aes(x = Sample, y = Ce_ppm)) +
+  geom_point() +
+  scale_x_discrete(guide = guide_axis(angle = 90))
+ce_plot
+```
+
+
+```{r single sample all elements}
+ree_plot <- ggplot(ree_data, aes(x = element, y = `FUWM 16 H 3`, group = 1)) +
+  geom_hline(aes(yintercept = 1, color = "red"), show.legend = FALSE) +
+  geom_line() +
+  geom_point() +
+  scale_y_log10() +
+  scale_x_discrete(guide = guide_axis(angle = 90))
+ree_plot
+```
+
+```{r all samples and elements}
+ree_plot2 <- ggplot(ree_data2, aes(x = element, y = Value)) +
+  geom_point() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  theme(
+    panel.grid.major = element_line(
+      color = "gray"
+    )
+    ) +
+  facet_wrap(vars(Sample)) 
+ree_plot2
+```
+
+```{r normalized plot}
+normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1)) +
+  geom_hline(aes(yintercept = 1, color = "red"), show.legend = FALSE) +
+  geom_line() +
+  geom_point() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  scale_y_log10() +
+  theme(panel.grid.major = element_line(color = "gray")) +
+  ylab("ppm (log scale)") +
+  xlab("Element") +
+  facet_wrap(vars(Sample)) 
+normal_plot
+```
+
+```{r normalized plot aio}
+normal_aio <- ggplot(normal, aes(x = element, y = Value, color = Sample)) +
+  geom_point() +
+  geom_line(group = 1) +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  scale_y_log10() +
+  scale_color_discrete() +
+  theme(
+    panel.grid.major = element_line(
+      color = "gray"
+    )
+    )
+normal_aio
+```
