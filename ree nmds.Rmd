@@ -39,6 +39,10 @@ nmds
 data_scores = as.data.frame(scores(nmds)$sites)
 data_scores$Sample = normalize$Sample
 data_scores$Cement = normalize$Cement
+
+hull <- data_scores %>%
+  group_by(Cement) %>%
+  slice(chull(NMDS1, NMDS2))
 ```
 
 
@@ -46,6 +50,7 @@ data_scores$Cement = normalize$Cement
 ```{r}
 nmds_plot <- ggplot(data_scores, aes(x = NMDS1, y = NMDS2)) +
   geom_point(aes(color = Cement)) +
+  geom_polygon(data = hull, alpha = .25, aes(fill = Cement)) +
   theme(
     panel.background = element_rect(fill = "black"),
     legend.key = element_rect(fill = "black")
