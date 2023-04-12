@@ -116,17 +116,25 @@ normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1)) + #normali
 normal_plot
 ```
 
-```{r normalized plot aio}
-normal_aio <- ggplot(normal, aes(x = element, y = Value, color = Sample)) + #attempt at making a single spider plot with all samples
+```{r normalized plot aio cement}
+cement_avg <- normal %>%
+  group_by(Cement, element) %>%
+  summarise(
+    n = n(),
+    avg = mean(Value)
+  )
+cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete"))
+
+cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) + #attempt at making a single spider plot with all samples
   geom_point() +
-  geom_line(group = 1) +
+  geom_line(aes(group = Cement)) +
   scale_x_discrete(guide = guide_axis(angle = 90)) +
   scale_y_log10() +
-  scale_color_discrete() +
+  scale_color_viridis_d() +
   theme(
-    panel.grid.major = element_line(
-      color = "gray"
+    panel.grid.major = element_line(color = "white",),
+    panel.background = element_rect(fill = "gray"),
+    legend.background = element_rect(fill = "gray")
     )
-    )
-normal_aio
+cement_aio
 ```
