@@ -13,16 +13,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library("readxl")
 
-all_data <- read_excel("ree_data_r.xlsx")
+all_data <- read_excel("ree_data_r.xlsx", 1)
+cement_data <- read_excel("ree_data_r.xlsx", 2)
 ```
 
 #Data Tables
-
-```{r data wrangle rotate}
-rotate_data <- data.frame(t(all_data[-1]))
-colnames(rotate_data) <- all_data$Sample
-rotate_data <- tibble::rownames_to_column(rotate_data, "element")
-```
 
 ```{r data wrangle ree only}
 ree_data <- all_data %>%
