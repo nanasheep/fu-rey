@@ -21,29 +21,30 @@ cement_data <- read_excel("ree_data_r.xlsx", 2)
 
 ```{r data wrangle ree only}
 ree_data <- all_data %>%
-  select("Sample", "Y_ppm", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_ppm",  "Gd_ppm","Dy_ppm", "Ho_ppm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm")
-ree_data <- data.frame(t(ree_data[-1]))
-colnames(ree_data) <- all_data$Sample
+  select("Sample", "Y_ppm", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_ppm",  "Gd_ppm","Dy_ppm", "Ho_ppm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm") #filter out non REY elements\
+ree_data <- data.frame(t(ree_data[-1])) #transpose and remove first row containing sample names
+colnames(ree_data) <- all_data$Sample #rename column names with sample names
 ree_data <- tibble::rownames_to_column(ree_data, "element") %>%
-  mutate(element = fct_inorder(element))
+  mutate(element = fct_inorder(element)) #order elements
 ```
 
 ```{r data wrangle pivot}
 ree_data2 <- ree_data %>%
-  pivot_longer(-element, names_to = "Sample", values_to = "Value")
+  pivot_longer(-element, names_to = "Sample", values_to = "Value") #pivot data to have each element value as observation
 ```
 
 ```{r paas normalized pourmand et al 2012}
 attach(all_data)
 normalize <- all_data %>%
-  select("Sample", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_ppm",  "Gd_ppm","Dy_ppm", "Y_ppm",  "Ho_ppm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm") %>%
-  mutate(Y_normal = Y_ppm/27.31, La_normal = La_ppm/44.56, Ce_normal = Ce_ppm/88.25, Pr_normal = Pr_ppm/10.15, Nd_normal = Nd_ppm/37.32, Sm_normal = Sm_ppm/6.884, Eu_normal = Eu_ppm/1.215, Gd_normal = Gd_ppm/6.043, Dy_normal = Dy_ppm/5.325, Ho_normal = Ho_ppm/1.052, Er_normal = Er_ppm/3.075, Tm_normal = Tm_ppm/0.4510, Yb_normal = Yb_ppm/3.012, Lu_normal = Lu_ppm/0.4386) %>%
-    select("Sample", "La_normal", "Ce_normal", "Pr_normal", "Nd_normal", "Sm_normal", "Eu_normal",  "Gd_normal","Dy_normal", "Y_normal", "Ho_normal", "Er_normal", "Tm_normal", "Yb_normal", "Lu_normal")
-normal <- data.frame(t(normalize[-1]))
-colnames(normal) <- all_data$Sample
+  select("Sample", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_ppm",  "Gd_ppm","Dy_ppm", "Y_ppm",  "Ho_ppm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm") %>% #filter out non REY elements
+  mutate(Y_normal = Y_ppm/27.31, La_normal = La_ppm/44.56, Ce_normal = Ce_ppm/88.25, Pr_normal = Pr_ppm/10.15, Nd_normal = Nd_ppm/37.32, Sm_normal = Sm_ppm/6.884, Eu_normal = Eu_ppm/1.215, Gd_normal = Gd_ppm/6.043, Dy_normal = Dy_ppm/5.325, Ho_normal = Ho_ppm/1.052, Er_normal = Er_ppm/3.075, Tm_normal = Tm_ppm/0.4510, Yb_normal = Yb_ppm/3.012, Lu_normal = Lu_ppm/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
+    select("Sample", "La_normal", "Ce_normal", "Pr_normal", "Nd_normal", "Sm_normal", "Eu_normal",  "Gd_normal","Dy_normal", "Y_normal", "Ho_normal", "Er_normal", "Tm_normal", "Yb_normal", "Lu_normal") #filter out non normalized values
+normal <- data.frame(t(normalize[-1])) #transpose and remove first row containing sample names
+colnames(normal) <- all_data$Sample #rename column names with sample names
 normal <- tibble::rownames_to_column(normal, "element") %>%
-  mutate(element = fct_inorder(element)) %>%
-  pivot_longer(-element, names_to = "Sample", values_to = "Value")
+  mutate(element = fct_inorder(element)) %>% #order elements
+  pivot_longer(-element, names_to = "Sample", values_to = "Value") %>% #pivot data to have each element value as observation
+  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
 ```
 
 ```{r anomaly calculations}
@@ -58,15 +59,15 @@ anomaly <- normalize %>%
 #Plots
 
 ```{r single element all samples}
-ce_plot <- ggplot(all_data, aes(x = Sample, y = Ce_ppm)) +
+element_plot <- ggplot(all_data, aes(x = Sample, y = Ce_ppm)) + #change y to element of choice
   geom_point() +
   scale_x_discrete(guide = guide_axis(angle = 90))
-ce_plot
+element_plot
 ```
 
 
 ```{r single sample all elements}
-ree_plot <- ggplot(ree_data, aes(x = element, y = `FUWM 16 H 3`, group = 1)) +
+ree_plot <- ggplot(ree_data, aes(x = element, y = `FUWM 16 H 3`, group = 1)) + #change y to sample of choice
   geom_hline(aes(yintercept = 1, color = "red"), show.legend = FALSE) +
   geom_line() +
   geom_point() +
@@ -76,7 +77,7 @@ ree_plot
 ```
 
 ```{r all samples and elements}
-ree_plot2 <- ggplot(ree_data2, aes(x = element, y = Value)) +
+ree_plot2 <- ggplot(ree_data2, aes(x = element, y = Value)) + #non normalized spider plots all samples
   geom_point() +
   scale_x_discrete(guide = guide_axis(angle = 90)) +
   theme(
@@ -89,7 +90,7 @@ ree_plot2
 ```
 
 ```{r normalized plot}
-normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1)) +
+normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1)) + #normalized spider plots all samples
   geom_hline(aes(yintercept = 1, color = "red"), show.legend = FALSE) +
   geom_line() +
   geom_point() +
@@ -103,7 +104,7 @@ normal_plot
 ```
 
 ```{r normalized plot aio}
-normal_aio <- ggplot(normal, aes(x = element, y = Value, color = Sample)) +
+normal_aio <- ggplot(normal, aes(x = element, y = Value, color = Sample)) + #attempt at making a single spider plot with all samples
   geom_point() +
   geom_line(group = 1) +
   scale_x_discrete(guide = guide_axis(angle = 90)) +
