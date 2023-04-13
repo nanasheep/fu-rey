@@ -121,20 +121,22 @@ cement_avg <- normal %>%
   group_by(Cement, element) %>%
   summarise(
     n = n(),
-    avg = mean(Value)
+    avg = mean(Value),
+    sd = sd(Value)
   )
 cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete"))
 
 cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) + #attempt at making a single spider plot with all samples
   geom_point() +
   geom_line(aes(group = Cement)) +
+  geom_errorbar(aes(ymin = avg - sd, ymax = avg + sd, width = .2), position = "dodge") +
   scale_x_discrete(guide = guide_axis(angle = 90)) +
   scale_y_log10() +
   scale_color_viridis_d() +
   theme(
     panel.grid.major = element_line(color = "white",),
-    panel.background = element_rect(fill = "gray"),
-    legend.background = element_rect(fill = "gray")
+    panel.background = element_rect(fill = "#878787"),
+    legend.background = element_rect(fill = "#878787")
     )
 cement_aio
 ```
