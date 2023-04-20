@@ -59,9 +59,21 @@ anomaly <- normalize %>%
   group_by(Cement) %>%
   summarise(
     Ce_mean = mean(Ce_anomaly),
+    Ce_sd = sd(Ce_anomaly),
+    Ce_max = max(Ce_anomaly),
+    Ce_min = min(Ce_anomaly),
     YH_mean = mean(Y_Ho_ratio),
+    YH_sd = sd(Y_Ho_ratio),
+    YH_max = max(Y_Ho_ratio),
+    YH_min = min(Y_Ho_ratio),
     Eu_mean = mean(Eu_anomaly),
-    BSI_mean = mean(BSI)
+    Eu_sd = sd(Eu_anomaly),
+    Eu_max = max(Eu_anomaly),
+    Eu_min = min(Eu_anomaly),
+    BSI_mean = mean(BSI),
+    BSI_sd = sd(BSI),
+    BSI_max = max(BSI),
+    BSI_min = min(BSI)
   )
 ```
 
