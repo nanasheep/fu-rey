@@ -138,9 +138,9 @@ normal_plot
 ```{r normalized cement plot}
 normal_plot <- ggplot(cement_avg, aes(x = element, y = avg, group = 1)) + #normalized spider plots all cements
   geom_hline(aes(yintercept = 1, color = "red"), show.legend = FALSE) +
-  geom_point() +
+  geom_point(data = normal, aes(x = element, y = Value), color = "darkgray") +
+  geom_point(colour = "blue") +
   geom_line(aes(group = Cement)) +
-  geom_point(data = normal, x = element, y = Value) +
   scale_x_discrete(guide = guide_axis(angle = 90)) +
   scale_y_log10() +
   theme(panel.grid.major = element_line(color = "gray")) +
