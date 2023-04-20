@@ -41,7 +41,7 @@ normalize <- all_data %>%
     select("Sample", "La_normal", "Ce_normal", "Pr_normal", "Nd_normal", "Sm_normal", "Eu_normal",  "Gd_normal","Dy_normal", "Y_normal", "Ho_normal", "Er_normal", "Tm_normal", "Yb_normal", "Lu_normal") %>% #filter out non normalized values
   left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
 
-normal <- data.frame(t(normalize[-1])) #transpose and remove first row containing sample names
+normal <- data.frame(t(normalize[2:15]))#transpose and remove first row containing sample names and cement row
 colnames(normal) <- all_data$Sample #rename column names with sample names
 normal <- tibble::rownames_to_column(normal, "element") %>%
   mutate(element = fct_inorder(element)) %>% #order elements
@@ -75,6 +75,17 @@ anomaly <- normalize %>%
     BSI_max = max(BSI),
     BSI_min = min(BSI)
   )
+```
+
+```{r cement averages}
+cement_avg <- normal %>%
+  group_by(Cement, element) %>%
+  summarise(
+    n = n(),
+    avg = mean(Value),
+    sd = sd(Value)
+  )
+cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete"))
 ```
 
 #Plots
@@ -125,9 +136,11 @@ normal_plot
 ```
 
 ```{r normalized cement plot}
-normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1)) + #normalized spider plots all cements
+normal_plot <- ggplot(cement_avg, aes(x = element, y = avg, group = 1)) + #normalized spider plots all cements
   geom_hline(aes(yintercept = 1, color = "red"), show.legend = FALSE) +
   geom_point() +
+  geom_line(aes(group = Cement)) +
+  geom_point(data = normal, x = element, y = Value) +
   scale_x_discrete(guide = guide_axis(angle = 90)) +
   scale_y_log10() +
   theme(panel.grid.major = element_line(color = "gray")) +
@@ -138,15 +151,6 @@ normal_plot
 ```
 
 ```{r normalized plot aio cement}
-cement_avg <- normal %>%
-  group_by(Cement, element) %>%
-  summarise(
-    n = n(),
-    avg = mean(Value),
-    sd = sd(Value)
-  )
-cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete"))
-
 cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) + #attempt at making a single spider plot with all samples
   geom_point() +
   geom_line(aes(group = Cement)) +
