@@ -1,0 +1,64 @@
+---
+title: "ree stats"
+author: "Clara Wong"
+date: "2023-05-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(MASS)
+```
+
+## Data Import
+```{r}
+all_data <- read_excel("ree_data_r.xlsx", 1)
+cement_data <- read_excel("ree_data_r.xlsx", 2)
+```
+
+## Data Wrangle
+```{r paas normalized pourmand et al 2012}
+attach(all_data)
+normalize <- all_data %>%
+  left_join(cement_data, by = c("Sample" = "Sample")) %>% #attach cement to each observation
+#  filter(Cement != "Manganese") %>% #removes manganese samples
+  mutate(Y_normal = Y_ppm/27.31, La_normal = La_ppm/44.56, Ce_normal = Ce_ppm/88.25, Pr_normal = Pr_ppm/10.15, Nd_normal = Nd_ppm/37.32, Sm_normal = Sm_ppm/6.884, Eu_normal = Eu_ppm/1.215, Gd_normal = Gd_ppm/6.043, Dy_normal = Dy_ppm/5.325, Ho_normal = Ho_ppm/1.052, Er_normal = Er_ppm/3.075, Tm_normal = Tm_ppm/0.4510, Yb_normal = Yb_ppm/3.012, Lu_normal = Lu_ppm/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
+    select(Sample, Cement, La_normal, Ce_normal, Pr_normal, Nd_normal, Sm_normal, Eu_normal, Gd_normal,Dy_normal, Y_normal, Ho_normal, Er_normal, Tm_normal, Yb_normal)#filter out non normalized values and Lu
+```
+
+## Normality
+```{r kolmogorov-smirnov}
+ks_result <- normalize %>%
+  mutate()
+  group_by(Cement) %>%
+  summarize(
+    ks_La <- ks.test(d13C, "pnorm")$p.value,
+    ks_Ce <- ks.test(d18O, "pnorm")$p.value,
+    ks_Pr <- ks.test(d18O, "pnorm")$p.value,
+    ks_Nd <- ks.test(d18O, "pnorm")$p.value,
+    ks_Sm <- ks.test(d18O, "pnorm")$p.value,
+    ks_Eu <- ks.test(d18O, "pnorm")$p.value,
+    ks_Gd <- ks.test(d18O, "pnorm")$p.value,
+    ks_Dy <- ks.test(d18O, "pnorm")$p.value,
+    ks_Y <- ks.test(d18O, "pnorm")$p.value,
+    ks_Ho <- ks.test(d18O, "pnorm")$p.value,
+    ks_Er <- ks.test(d18O, "pnorm")$p.value,
+    ks_Tm <- ks.test(d18O, "pnorm")$p.value,
+    ks_Yb <- ks.test(d18O, "pnorm")$p.value
+  )
+#colnames(ks_result) <- c("Cement", "d13C_p", "d18O_p")
+ks_result
+```
+
+```{r shapiro-wilk}
+sw_result <- iso_combo %>%
+  group_by(Cement) %>%
+  filter(Cement != "Manganese") %>%
+  summarize(
+    sw_C <- shapiro.test(d13C)$p.value,
+    sw_O <- shapiro.test(d18O)$p.value
+  )
+colnames(sw_result) <- c("Cement", "d13C_p", "d18O_p")
+sw_result
+```
