@@ -42,6 +42,9 @@ data_scores = as.data.frame(scores(nmds)$sites)
 data_scores$Sample = normalize$Sample
 data_scores$Cement = normalize$Cement
 
+species_scores <- as.data.frame(scores(nmds, "species"))
+species_scores$species <- rownames(species_scores)
+
 hull <- data_scores %>%
   group_by(Cement) %>%
   slice(chull(NMDS1, NMDS2))
@@ -53,6 +56,7 @@ hull <- data_scores %>%
 nmds_plot <- ggplot(data_scores, aes(x = NMDS1, y = NMDS2)) +
   geom_point(aes(color = Cement)) +
   geom_polygon(data = hull, alpha = .25, aes(fill = Cement)) +
+  geom_text(data = species_scores, color = "white", aes(x = NMDS1, y = NMDS2, label = species)) +
   theme(
     panel.background = element_rect(fill = "black"),
     legend.key = element_rect(fill = "black")
