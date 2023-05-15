@@ -75,6 +75,7 @@ anomaly <- normalize %>%
     BSI_max = max(BSI),
     BSI_min = min(BSI)
   )
+anomaly
 ```
 
 ```{r cement averages}
