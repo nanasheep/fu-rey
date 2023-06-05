@@ -1,0 +1,83 @@
+---
+title: "mn analysis"
+author: "Clara Wong"
+date: "2023-06-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Data Import
+```{r}
+all_data <- readxl::read_excel("ree_data_r.xlsx", 1)
+cement_data <- readxl::read_excel("ree_data_r.xlsx", 2) 
+```
+
+## Data Wrangle
+```{r paas normalized pourmand et al 2012}
+attach(all_data)
+normalize <- all_data %>%
+  left_join(cement_data, by = c("Sample" = "Sample")) %>% #attach cement to each observation
+  mutate(Y_normal = Y_ppm/27.31, La_normal = La_ppm/44.56, Ce_normal = Ce_ppm/88.25, Pr_normal = Pr_ppm/10.15, Nd_normal = Nd_ppm/37.32, Sm_normal = Sm_ppm/6.884, Eu_normal = Eu_ppm/1.215, Gd_normal = Gd_ppm/6.043, Dy_normal = Dy_ppm/5.325, Ho_normal = Ho_ppm/1.052, Er_normal = Er_ppm/3.075, Tm_normal = Tm_ppm/0.4510, Yb_normal = Yb_ppm/3.012, Lu_normal = Lu_ppm/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
+    select("Sample", "Cement", "La_normal", "Ce_normal", "Pr_normal", "Nd_normal", "Sm_normal", "Eu_normal",  "Gd_normal","Dy_normal", "Y_normal", "Ho_normal", "Er_normal", "Tm_normal", "Yb_normal", "Lu_normal")#filter out non normalized values
+```
+
+```{r anomaly calculations}
+anomaly <- normalize %>%
+  mutate(
+    Ce_anomaly = Ce_normal/(Pr_normal^2/Nd_normal),
+    Y_Ho_ratio = Y_normal/Ho_normal,
+    Eu_anomaly = (2*Eu_normal)/(Sm_normal + Gd_normal),
+    BSI = (2*(Sm_normal + Gd_normal + Dy_normal)/3)/((La_normal +Pr_normal + Nd_normal)/3+(Ho_normal + Er_normal +Tm_normal +Yb_normal +Lu_normal)/5))
+
+anomaly_summ <- anomaly %>%
+  group_by(Cement) %>%
+  summarise(
+    Ce_mean = mean(Ce_anomaly),
+    Ce_sd = sd(Ce_anomaly),
+    Ce_max = max(Ce_anomaly),
+    Ce_min = min(Ce_anomaly),
+    YH_mean = mean(Y_Ho_ratio),
+    YH_sd = sd(Y_Ho_ratio),
+    YH_max = max(Y_Ho_ratio),
+    YH_min = min(Y_Ho_ratio),
+    Eu_mean = mean(Eu_anomaly),
+    Eu_sd = sd(Eu_anomaly),
+    Eu_max = max(Eu_anomaly),
+    Eu_min = min(Eu_anomaly),
+    BSI_mean = mean(BSI),
+    BSI_sd = sd(BSI),
+    BSI_max = max(BSI),
+    BSI_min = min(BSI)
+  )
+```
+
+```{r select Mn and Ce}
+MnCe <- anomaly %>%
+  inner_join(all_data, by = "Sample") %>%
+  select(Sample, Ce_normal, Ce_anomaly, Mn_ppm) %>%
+  inner_join(cement_data, by = "Sample")
+```
+
+## Plots
+```{r boxplot cement/Mn}
+cement_Mn <- MnCe %>%
+  inner_join(anomaly_summ, by = "Cement") %>%
+  ggplot(aes(x = Mn_ppm, y = Cement, color = Ce_mean, fill = Ce_mean)) +
+  geom_boxplot() +
+  scale_fill_viridis_c(trans = "log10") +
+  scale_color_viridis_c(trans = "log10") +
+  scale_x_log10()
+cement_Mn
+```
+
+```{r scatter}
+cement_Mn <- MnCe %>%
+  ggplot(aes(x = Mn_ppm, y = Ce_anomaly, color = Cement)) +
+  geom_point() +
+  scale_color_brewer(palette = "Set1")
+cement_Mn
+```
