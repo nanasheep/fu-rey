@@ -50,6 +50,12 @@ normal <- tibble::rownames_to_column(normal, "element") %>%
 ```
 
 ```{r anomaly calculations}
+rawAnomaly <- normalize %>%
+  mutate(Ce_anomaly = Ce_normal/(Pr_normal^2/Nd_normal),
+    Y_Ho_ratio = Y_normal/Ho_normal) %>%
+  select(Sample, Cement, Ce_anomaly, Y_Ho_ratio)
+rawAnomaly
+
 anomaly <- normalize %>%
   mutate(
     Ce_anomaly = Ce_normal/(Pr_normal^2/Nd_normal),
@@ -90,6 +96,11 @@ cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "
 ```
 
 #Plots
+```{r Ce anomaly box}
+anomalyplot <- ggplot(rawAnomaly, aes(y = Ce_anomaly, x = Cement)) +
+  geom_boxplot()
+anomalyplot
+```
 
 ```{r single element all samples}
 element_plot <- ggplot(all_data, aes(x = Sample, y = Ce_ppm)) + #change y to element of choice
@@ -123,7 +134,7 @@ ree_plot2
 ```
 
 ```{r normalized plot}
-normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1)) + #normalized spider plots all samples
+normal_plot <- ggplot(normal, aes(x = element, y = Value, group = 1, color = Cement)) + #normalized spider plots all samples
   geom_hline(aes(yintercept = 1, color = "red"), show.legend = FALSE) +
   geom_line() +
   geom_point() +
