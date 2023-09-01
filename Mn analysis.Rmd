@@ -76,6 +76,7 @@ cement_Mn
 
 ```{r scatter}
 cement_Mn <- MnCe %>%
+  filter(Cement != "Manganese") %>%
   ggplot(aes(x = Mn_ppm, y = Ce_anomaly, color = Cement)) +
   geom_point() +
   scale_color_brewer(palette = "Set1")
