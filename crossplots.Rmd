@@ -1,0 +1,89 @@
+---
+title: "crossplots"
+author: "Clara Wong"
+date: "2023-09-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library("readxl")
+
+all_data <- read_excel("ree_data_r.xlsx", 1)
+cement_data <- read_excel("ree_data_r.xlsx", 2)
+```
+
+## Data Tables
+
+```{r data wrangle ree only}
+ree_data <- all_data %>%
+  select("Sample", "Y_ppm", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_ppm",  "Gd_ppm","Dy_ppm", "Ho_ppm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm") #filter out non REY elements\
+ree_data <- data.frame(t(ree_data[-1])) #transpose and remove first row containing sample names
+colnames(ree_data) <- all_data$Sample #rename column names with sample names
+ree_data <- tibble::rownames_to_column(ree_data, "element") %>%
+  mutate(element = fct_inorder(element)) #order elements
+```
+
+```{r paas normalized pourmand et al 2012}
+attach(all_data)
+normalize <- all_data %>%
+  mutate(Y_normal = Y_ppm/27.31, La_normal = La_ppm/44.56, Ce_normal = Ce_ppm/88.25, Pr_normal = Pr_ppm/10.15, Nd_normal = Nd_ppm/37.32, Sm_normal = Sm_ppm/6.884, Eu_normal = Eu_ppm/1.215, Gd_normal = Gd_ppm/6.043, Dy_normal = Dy_ppm/5.325, Ho_normal = Ho_ppm/1.052, Er_normal = Er_ppm/3.075, Tm_normal = Tm_ppm/0.4510, Yb_normal = Yb_ppm/3.012, Lu_normal = Lu_ppm/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
+  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
+
+normal <- data.frame(t(normalize[2:15]))#transpose and remove first row containing sample names and cement row
+colnames(normal) <- all_data$Sample #rename column names with sample names
+normal <- tibble::rownames_to_column(normal, "element") %>%
+  mutate(element = fct_inorder(element)) %>% #order elements
+  pivot_longer(-element, names_to = "Sample", values_to = "Value") %>% #pivot data to have each element value as observation
+  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
+```
+
+```{r anomaly calculations}
+anomaly <- normalize %>%
+  mutate(
+    Ce_anomaly = Ce_normal/(Pr_normal^2/Nd_normal),
+    Y_Ho_ratio = Y_normal/Ho_normal,
+    Eu_anomaly = (2*Eu_normal)/(Sm_normal + Gd_normal),
+    BSI = (2*(Sm_normal + Gd_normal + Dy_normal)/3)/((La_normal +Pr_normal + Nd_normal)/3+(Ho_normal + Er_normal +Tm_normal +Yb_normal +Lu_normal)/5)) %>%
+  group_by(Cement) 
+anomaly
+```
+
+## Ce Cross plots
+
+``` {r Mn}
+ggplot(anomaly, aes(x = Ce_anomaly, y = Mn_ppm, color = Cement)) +
+     geom_point()
+```
+``` {r Sr}
+ggplot(anomaly, aes(x = Ce_anomaly, y = Sr_ppm, color = Cement)) +
+     geom_point()
+```
+``` {r Fe}
+ggplot(anomaly, aes(x = Ce_anomaly, y = Fe_ppm, color = Cement)) +
+     geom_point()
+```
+``` {r Ba}
+ggplot(anomaly, aes(x = Ce_anomaly, y = Ba_ppm, color = Cement)) +
+     geom_point()
+```
+``` {r Mg}
+ggplot(anomaly, aes(x = Ce_anomaly, y = Mg_ppm, color = Cement)) +
+     geom_point()
+```
+
+## Other cross plots
+
+``` {r Ca Mg}
+ggplot(anomaly, aes(x = Ca_ppm, y = Mg_ppm, color = Cement)) +
+     geom_point()
+```
+``` {r Eu Ba}
+ggplot(anomaly, aes(x = Eu_anomaly, y = Ba_ppm, color = Cement)) +
+     geom_point()
+```
+``` {r Y Ho}
+ggplot(anomaly, aes(x = Ho_normal, y = Y_normal, color = Cement)) +
+     geom_point()
+```
