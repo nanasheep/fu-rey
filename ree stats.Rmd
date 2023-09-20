@@ -3,6 +3,8 @@ title: "ree stats"
 author: "Clara Wong"
 date: "2023-05-02"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -26,8 +28,16 @@ normalize <- all_data %>%
     dplyr::select(Sample, Cement, La_normal, Ce_normal, Pr_normal, Nd_normal, Sm_normal, Eu_normal, Gd_normal,Dy_normal, Y_normal, Ho_normal, Er_normal, Tm_normal, Yb_normal)#filter out non normalized values and Lu
 ```
 
+```{r Ce anomaly and Y/Ho}
+rawAnomaly <- normalize %>%
+  mutate(Ce_anomaly = Ce_normal/(Pr_normal^2/Nd_normal),
+    Y_Ho_ratio = Y_normal/Ho_normal) %>%
+  select(Sample, Cement, Ce_anomaly, Y_Ho_ratio)
+rawAnomaly
+```
+
 ## Normality
-```{r kolmogorov-smirnov}
+```{r kolmogorov-smirnov normalized conc}
 ks_result <- normalize %>%
   mutate(Eu_normal = ifelse(Eu_normal > 4, NA, Eu_normal)) %>%
   group_by(Cement) %>%
@@ -50,7 +60,7 @@ colnames(ks_result) <- c("Cement", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy
 ks_result
 ```
 
-```{r shapiro-wilk}
+```{r shapiro-wilk normalized conc}
 sw_result <- normalize %>%
   group_by(Cement) %>%
   mutate(Cement = case_when(
@@ -76,4 +86,30 @@ sw_result <- normalize %>%
   )
 colnames(sw_result) <- c("Cement", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb")
 sw_result
+```
+
+```{r shapiro-wilk Ce anomaly}
+sw_Ce <- rawAnomaly %>%
+  group_by(Cement) %>%
+  mutate(Cement = case_when(
+    str_detect(Cement, "Micrite") == TRUE ~ "Micrite",
+    str_detect(Cement, "Microbial") == TRUE ~ "Microbial",
+    TRUE ~ as.character(Cement)
+   )) %>%
+  filter(Cement != "Manganese") %>%
+  summarise(
+    shapiro.test(Ce_anomaly)$p.value
+  )
+```
+
+```{r Ce wilcoxon}
+micriteMicro <- rawAnomaly %>%
+  filter(Cement == case_when(
+    str_detect(Cement, "Micrite") == TRUE ~ "Micrite",
+    str_detect(Cement, "Microbial") == TRUE ~ "Microbial"
+  ))
+
+micriteMicro$Cement <- factor(micriteMicro$Cement, levels = c("Micrite", "Microbial"))
+
+wilcox.test(micriteMicro$Ce_anomaly ~ micriteMicro$Cement)
 ```
