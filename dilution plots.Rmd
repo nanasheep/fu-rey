@@ -14,7 +14,7 @@ library("readxl")
 all_data <- read_excel("ree_data_r.xlsx", 1)
 cement_data <- read_excel("ree_data_r.xlsx", 2)
 dilute_data <- read_excel("diluted data.xlsx", 5)
-colnames(dilute_data) <- c("Sample", "Na_ppm",)
+colnames(dilute_data) <- c("Sample", "Na_ppm", "Mg_ppm", "K_ppm", "Ca_ppm", "V_ppm", "Cr_ppm", "Fe_ppm", "Mn_ppm", "Cu_pm", "Zn_pm", "Rb_ppm", "Sr_ppm", "Y_ppm", "Mo_ppm", "In_ppm", "Ba_ppm", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_pm", "Gd_ppm", "Dy_ppm", "Ho_pm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm", "Pb_ppm", "U_ppm")
 ```
 
 #Data Tables
