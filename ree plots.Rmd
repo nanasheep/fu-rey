@@ -37,8 +37,8 @@ ree_data2 <- ree_data %>%
 attach(all_data)
 normalize <- all_data %>%
   select("Sample", "La_ppm", "Ce_ppm", "Pr_ppm", "Nd_ppm", "Sm_ppm", "Eu_ppm",  "Gd_ppm","Dy_ppm", "Y_ppm",  "Ho_ppm", "Er_ppm", "Tm_ppm", "Yb_ppm", "Lu_ppm") %>% #filter out non REY elements
-  mutate(Y_normal = Y_ppm/27.31, La_normal = La_ppm/44.56, Ce_normal = Ce_ppm/88.25, Pr_normal = Pr_ppm/10.15, Nd_normal = Nd_ppm/37.32, Sm_normal = Sm_ppm/6.884, Eu_normal = Eu_ppm/1.215, Gd_normal = Gd_ppm/6.043, Dy_normal = Dy_ppm/5.325, Ho_normal = Ho_ppm/1.052, Er_normal = Er_ppm/3.075, Tm_normal = Tm_ppm/0.4510, Yb_normal = Yb_ppm/3.012, Lu_normal = Lu_ppm/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
-    select("Sample", "La_normal", "Ce_normal", "Pr_normal", "Nd_normal", "Sm_normal", "Eu_normal",  "Gd_normal","Dy_normal", "Y_normal", "Ho_normal", "Er_normal", "Tm_normal", "Yb_normal", "Lu_normal") %>% #filter out non normalized values
+  mutate(Y = Y_ppm/27.31, La = La_ppm/44.56, Ce = Ce_ppm/88.25, Pr = Pr_ppm/10.15, Nd = Nd_ppm/37.32, Sm = Sm_ppm/6.884, Eu = Eu_ppm/1.215, Gd = Gd_ppm/6.043, Dy = Dy_ppm/5.325, Ho = Ho_ppm/1.052, Er = Er_ppm/3.075, Tm = Tm_ppm/0.4510, Yb = Yb_ppm/3.012, Lu = Lu_ppm/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
+    select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu",  "Gd","Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non normalized values
   left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
 
 normal <- data.frame(t(normalize[2:15]))#transpose and remove first row containing sample names and cement row
@@ -51,17 +51,17 @@ normal <- tibble::rownames_to_column(normal, "element") %>%
 
 ```{r anomaly calculations}
 rawAnomaly <- normalize %>%
-  mutate(Ce_anomaly = Ce_normal/(Pr_normal^2/Nd_normal),
-    Y_Ho_ratio = Y_normal/Ho_normal) %>%
+  mutate(Ce_anomaly = Ce/(Pr^2/Nd),
+    Y_Ho_ratio = Y/Ho) %>%
   select(Sample, Cement, Ce_anomaly, Y_Ho_ratio)
 rawAnomaly
 
 anomaly <- normalize %>%
   mutate(
-    Ce_anomaly = Ce_normal/(Pr_normal^2/Nd_normal),
-    Y_Ho_ratio = Y_normal/Ho_normal,
-    Eu_anomaly = (2*Eu_normal)/(Sm_normal + Gd_normal),
-    BSI = (2*(Sm_normal + Gd_normal + Dy_normal)/3)/((La_normal +Pr_normal + Nd_normal)/3+(Ho_normal + Er_normal +Tm_normal +Yb_normal +Lu_normal)/5)) %>%
+    Ce_anomaly = Ce/(Pr^2/Nd),
+    Y_Ho_ratio = Y/Ho,
+    Eu_anomaly = (2*Eu)/(Sm  + Gd),
+    BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) %>%
   group_by(Cement) %>%
   summarise(
     Ce_mean = mean(Ce_anomaly),
@@ -163,18 +163,17 @@ normal_plot
 ```
 
 ```{r normalized plot aio cement}
-cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) + #attempt at making a single spider plot with all samples
+cement_aio <- cement_avg %>% filter(element != "Lu")
+cement_aio <- ggplot(cement_aio, aes(x = element, y = avg, color = Cement)) + #attempt at making a single spider plot with all samples
   geom_point() +
   geom_line(aes(group = Cement), size = 1) +
-  #geom_errorbar(aes(ymin = avg - sd, ymax = avg + sd), size = .5) +
-  geom_point(data = normal, aes(x = element, y = Value, color = Cement), size = 1) +
-  scale_x_discrete(guide = guide_axis(angle = 90)) +
   scale_y_log10() +
   scale_color_brewer(palette = "Set1") +
   theme(
-    #panel.grid.major = element_line(color = "white",),
    panel.background = element_rect(fill = "#C3C3C3"),
     legend.key = element_rect(fill = "#C3C3C3")
-    )
+    ) +
+  xlab("Element") +
+  ylab("Shale (PAAS) normalized concentration")
 cement_aio
 ```
