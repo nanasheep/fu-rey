@@ -81,5 +81,9 @@ comp <- left_join(x = pivot_longer(dilute_normalize, cols =   La_normal:Lu_norma
 
 ```{r comp plots}
 ggplot() +
-  geom_point(comp, aes(x = Element, y = Conc_dilute))
+  geom_point(data = comp, aes(x = Element, y = Conc_dilute, color = "dilute")) +
+  geom_point(data = comp, aes(x = Element, y = Conc_orig, color = "orig")) +
+  scale_y_log10() +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  facet_wrap(vars(Sample))
 ```
