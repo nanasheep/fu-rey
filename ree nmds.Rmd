@@ -27,6 +27,7 @@ normalize <- all_data %>%
   filter(Cement != "Manganese") %>% #removes manganese samples
   mutate(Y_normal = Y_ppm/27.31, La_normal = La_ppm/44.56, Ce_normal = Ce_ppm/88.25, Pr_normal = Pr_ppm/10.15, Nd_normal = Nd_ppm/37.32, Sm_normal = Sm_ppm/6.884, Eu_normal = Eu_ppm/1.215, Gd_normal = Gd_ppm/6.043, Dy_normal = Dy_ppm/5.325, Ho_normal = Ho_ppm/1.052, Er_normal = Er_ppm/3.075, Tm_normal = Tm_ppm/0.4510, Yb_normal = Yb_ppm/3.012, Lu_normal = Lu_ppm/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
     select("Sample", "Cement", "La_normal", "Ce_normal", "Pr_normal", "Nd_normal", "Sm_normal", "Eu_normal",  "Gd_normal","Dy_normal", "Y_normal", "Ho_normal", "Er_normal", "Tm_normal", "Yb_normal")#filter out non normalized values and Lu
+normalize$Cement = factor(normalize$Cement, levels = c("Micrite (SSF)", "Micrite", "Laminar Calcrete", "Laminar Microbial", "Microbial (SSF)", "Microbial"))
 ```
 
 ## Stats
@@ -54,12 +55,16 @@ hull <- data_scores %>%
 ## Plot
 ```{r}
 nmds_plot <- ggplot(data_scores, aes(x = NMDS1, y = NMDS2)) +
-  geom_point(aes(color = Cement)) +
-  geom_polygon(data = hull, alpha = .25, aes(fill = Cement)) +
-  geom_text(data = species_scores, color = "white", aes(x = NMDS1, y = NMDS2, label = species)) +
+  geom_point(aes(color = forcats::fct_rev(Cement))) +
+  geom_polygon(data = hull, alpha = .6, aes(fill = forcats::fct_rev(Cement))) +
+  geom_text(data = species_scores, color = "black", aes(x = NMDS1, y = NMDS2, label = species)) +
+  annotate(geom = "text", x = 1, y = -.15, label = nmds$stress, color = "black") +
+  scale_color_brewer(palette = "Set1", name = "Texture") +
+  scale_fill_brewer(palette = "Set1", name = "Texture") +
   theme(
-    panel.background = element_rect(fill = "black"),
-    legend.key = element_rect(fill = "black")
+    panel.background = element_rect(fill = "#C3C3C3"),
+    panel.grid = element_blank(),
+    legend.key = element_rect(fill = "#C3C3C3")
   )
 nmds_plot
 ```
