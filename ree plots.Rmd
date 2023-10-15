@@ -52,14 +52,14 @@ normal <- tibble::rownames_to_column(normal, "element") %>%
 ```{r anomaly calculations}
 rawAnomaly <- normalize %>%
   mutate(Ce_anomaly = Ce/(Pr^2/Nd),
-    Y_Ho_ratio = Y/Ho) %>%
+    Y_Ho_ratio = all_data$Y_ppm/all_data$Ho_ppm) %>%
   select(Sample, Cement, Ce_anomaly, Y_Ho_ratio)
 rawAnomaly
 
 anomaly <- normalize %>%
   mutate(
     Ce_anomaly = Ce/(Pr^2/Nd),
-    Y_Ho_ratio = Y/Ho,
+    Y_Ho_ratio = all_data$Y_ppm/all_data$Ho_ppm,
     Eu_anomaly = (2*Eu)/(Sm  + Gd),
     BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) %>%
   group_by(Cement) %>%
@@ -150,7 +150,8 @@ normal_plot <- ggplot(cement_avg, aes(x = element, y = avg, group = 1)) + #norma
   geom_line(aes(group = Cement)) +
   scale_x_discrete(guide = guide_axis(angle = 90)) +
   scale_y_log10() +
-  theme(panel.grid.major = element_line(color = "gray")) +
+  theme(panel.grid.major = element_line(color = "gray"),
+        text = element_text(size = 20)) +
   ylab("ppm (log scale)") +
   xlab("Element") +
   facet_wrap(vars(Cement)) 
@@ -163,13 +164,14 @@ cement_aio <- cement_avg %>% filter(element != "Lu")
 cement_aio$Cement = factor(cement_aio$Cement, levels = c("Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Calcrete", "Micrite", "Micrite (SSF)", "Manganese"))
 
 cement_aio <- ggplot(cement_aio, aes(x = element, y = avg, color = Cement)) + #attempt at making a single spider plot with all samples
-  geom_point() +
+  geom_point(aes(shape = Cement), size = 3) +
   geom_line(aes(group = Cement), size = 1) +
   scale_y_log10() +
   scale_color_brewer(palette = "Set1") +
   theme(
    panel.background = element_rect(fill = "#C3C3C3"),
-    legend.key = element_rect(fill = "#C3C3C3")
+   legend.key = element_rect(fill = "#C3C3C3"),
+   text = element_text(size = 20)
     ) +
   xlab("Element") +
   ylab("Shale (PAAS) normalized concentration")
@@ -182,12 +184,14 @@ anomalydata$Cement = factor(anomalydata$Cement, levels = c("Manganese", "Micrite
 
 ce_box <- anomalydata %>%
   ggplot(aes(x = Ce_anomaly, y = Cement, fill = forcats::fct_rev(Cement))) +
-  geom_vline(aes(xintercept = .8, show.legend = FALSE), color = "blue") +
-  geom_vline(aes(xintercept = 1.2, show.legend = FALSE), color = "red") +
+  geom_vline(aes(xintercept = .8, show.legend = FALSE), color = "blue", size = 2) +
+  geom_vline(aes(xintercept = 1.2, show.legend = FALSE), color = "red", size = 2) +
   geom_boxplot() +
   theme(
    panel.background = element_rect(fill = "#C3C3C3"),
-   legend.title = element_text("Texture"),
+   legend.position = "none",
+   text = element_text(size = 20)
+   
     ) +
   scale_fill_brewer(palette = "Set1", name = "Texture") +
   xlab("Ce anomaly") +
