@@ -54,16 +54,10 @@ normal <- tibble::rownames_to_column(normal, "element") %>%
 ## Anomalies
 
 ```{r anomaly calculations}
-rawAnomaly <- normalize %>%
-  mutate(Ce_anomaly = Ce/(Pr^2/Nd),
-    Y_Ho_ratio = Y/Ho) %>%
-  select(Sample, Cement, Ce_anomaly, Y_Ho_ratio)
-rawAnomaly
-
 anomaly <- normalize %>%
   mutate(
     Ce_anomaly = Ce/(Pr^2/Nd),
-    Y_Ho_ratio = Y/Ho,
+    Y_Ho_ratio = all_data$Y/all_data$Ho,
     Eu_anomaly = (2*Eu)/(Sm  + Gd),
     BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) %>%
   group_by(Cement) %>%
