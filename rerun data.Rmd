@@ -14,7 +14,8 @@ library(readxl)
 ```
 
 ```{r}
-orig_data <- read_xlsx("jan2024 data.xlsx",4)
+orig_data <- read_xlsx("ree_data_r.xlsx", 1)
+rerun_data <- read_xlsx("jan2024 data.xlsx",4)
 dil_data <- read_xlsx("jan2024 data DILUTED.xlsx",4)
 cement_data <- read_excel("ree_data_r.xlsx", 2)
 ```
@@ -22,21 +23,41 @@ cement_data <- read_excel("ree_data_r.xlsx", 2)
 ## Data Wrangle
 
 ```{r reorganize data tables}
-orig_data <- orig_data[-1,] %>%
+orig_data <- orig_data %>%
+  rename(Sample = 1, Na = 2, Mg  = 3, K = 4, Ca = 5, V = 6, Cr = 7, Fe = 8, Mn = 9, Cu = 10, Zn = 11, Rb = 12, Sr = 13, Y = 14, Mo = 15, Ba = 16, La = 17, Ce = 18, Pr = 19, Nd = 20, Sm = 21, Eu = 22, Gd = 23, Dy = 24, Ho = 25, Er = 26, Tm = 27, Yb = 28, Lu = 29, Pb = 30, U = 31)
+
+rerun_data <- rerun_data[-1,] %>%
   rename(Sample = 1, Na = 2, Mg  = 3, K = 4, Ca = 5, V = 6, Cr = 7, Fe = 8, Mn = 9, Cu = 10, Zn = 11, Rb = 12, Sr = 13, Y = 14, Mo = 15, Ba = 16, La = 17, Ce = 18, Pr = 19, Nd = 20, Sm = 21, Eu = 22, Gd = 23, Dy = 24, Ho = 25, Er = 26, Tm = 27, Yb = 28, Lu = 29, Pb = 30, U = 31)
 
 dil_data <- dil_data[-1,] %>%
   rename(Sample = 1, Na = 2, Mg  = 3, K = 4, Ca = 5, V = 6, Cr = 7, Fe = 8, Mn = 9, Cu = 10, Zn = 11, Rb = 12, Sr = 13, Y = 14, Mo = 15, Ba = 16, La = 17, Ce = 18, Pr = 19, Nd = 20, Sm = 21, Eu = 22, Gd = 23, Dy = 24, Ho = 25, Er = 26, Tm = 27, Yb = 28, Lu = 29, Pb = 30, U = 31)
 
-all_data <- bind_rows(orig_data, dil_data) %>%
+all_rerun <- bind_rows(rerun_data, dil_data) %>%
   mutate_at(2:31, as.numeric)
 ```
 
 ## Normalization
 
-```{r paas normalized pourmand et al 2012}
-attach(all_data)
-normalize <- all_data %>%
+```{r orig paas normalized pourmand et al 2012}
+attach(orig_data)
+orig_normalize <- orig_data %>%
+  select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non REY elements
+  mutate(La = La/44.56, Ce = Ce/88.25, Pr = Pr/10.15, Nd = Nd/37.32, Sm = Sm/6.884, Eu = Eu/1.215, Gd = Gd/6.043, Dy = Dy/5.325, Y = Y/27.31, Ho = Ho/1.052, Er = Er/3.075, Tm = Tm/0.4510, Yb = Yb/3.012, Lu = Lu/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
+    select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non normalized values
+  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
+
+
+orig_normal <- data.frame(t(orig_normalize[2:15]))#transpose and remove first row containing sample names and cement row
+colnames(orig_normal) <- orig_data$Sample #rename column names with sample names
+orig_normal <- tibble::rownames_to_column(orig_normal, "element") %>%
+  mutate(element = fct_inorder(element)) %>% #order elements
+  pivot_longer(-element, names_to = "Sample", values_to = "Value") %>% #pivot data to have each element value as observation
+  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
+```
+
+```{r rerun paas normalized pourmand et al 2012}
+attach(all_rerun)
+normalize <- all_rerun %>%
   select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non REY elements
   mutate(La = La/44.56, Ce = Ce/88.25, Pr = Pr/10.15, Nd = Nd/37.32, Sm = Sm/6.884, Eu = Eu/1.215, Gd = Gd/6.043, Dy = Dy/5.325, Y = Y/27.31, Ho = Ho/1.052, Er = Er/3.075, Tm = Tm/0.4510, Yb = Yb/3.012, Lu = Lu/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
     select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non normalized values
@@ -44,7 +65,7 @@ normalize <- all_data %>%
 
 
 normal <- data.frame(t(normalize[2:15]))#transpose and remove first row containing sample names and cement row
-colnames(normal) <- all_data$Sample #rename column names with sample names
+colnames(normal) <- all_rerun$Sample #rename column names with sample names
 normal <- tibble::rownames_to_column(normal, "element") %>%
   mutate(element = fct_inorder(element)) %>% #order elements
   pivot_longer(-element, names_to = "Sample", values_to = "Value") %>% #pivot data to have each element value as observation
@@ -53,11 +74,40 @@ normal <- tibble::rownames_to_column(normal, "element") %>%
 
 ## Anomalies
 
-```{r anomaly calculations}
+```{r orig anomaly calculations}
+orig_anomaly <- orig_normalize %>%
+  mutate(
+    Ce_anomaly = Ce/(Pr^2/Nd),
+    Y_Ho_ratio = orig_data$Y/orig_data$Ho,
+    Eu_anomaly = (2*Eu)/(Sm  + Gd),
+    BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) %>%
+  group_by(Cement) %>%
+  summarise(
+    Ce_mean = mean(Ce_anomaly),
+    Ce_sd = sd(Ce_anomaly),
+    Ce_max = max(Ce_anomaly),
+    Ce_min = min(Ce_anomaly),
+    YH_mean = mean(Y_Ho_ratio),
+    YH_sd = sd(Y_Ho_ratio),
+    YH_max = max(Y_Ho_ratio),
+    YH_min = min(Y_Ho_ratio),
+    Eu_mean = mean(Eu_anomaly),
+    Eu_sd = sd(Eu_anomaly),
+    Eu_max = max(Eu_anomaly),
+    Eu_min = min(Eu_anomaly),
+    BSI_mean = mean(BSI),
+    BSI_sd = sd(BSI),
+    BSI_max = max(BSI),
+    BSI_min = min(BSI)
+  )
+orig_anomaly
+```
+
+```{r rerun anomaly calculations}
 anomaly <- normalize %>%
   mutate(
     Ce_anomaly = Ce/(Pr^2/Nd),
-    Y_Ho_ratio = all_data$Y/all_data$Ho,
+    Y_Ho_ratio = all_rerun$Y/all_rerun$Ho,
     Eu_anomaly = (2*Eu)/(Sm  + Gd),
     BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) %>%
   group_by(Cement) %>%
@@ -84,7 +134,18 @@ anomaly
 
 #Calculate averages
 
-```{r cement averages}
+```{r orig cement averages}
+orig_cement_avg <- orig_normal %>%
+  group_by(Cement, element) %>%
+  summarise(
+    n = n(),
+    avg = mean(Value),
+    sd = sd(Value)
+  )
+orig_cement_avg$Cement <- factor(orig_cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete"))
+```
+
+```{r rerun cement averages}
 cement_avg <- normal %>%
   group_by(Cement, element) %>%
   summarise(
@@ -92,13 +153,29 @@ cement_avg <- normal %>%
     avg = mean(Value),
     sd = sd(Value)
   )
-cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Micrite Above", "Micrite Below", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete"))
+cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete", "Micrite Above", "Micrite Below"))
 ```
 
 ## Plots
-``` {r}
+``` {r orig data spider}
+cement_aio <- orig_cement_avg %>% filter(element != "Lu")
+cement_aio <- ggplot(cement_aio, aes(x = element, y = avg, color = Cement)) + 
+  geom_point() +
+  geom_line(aes(group = Cement), size = 1) +
+  scale_y_log10() +
+  scale_color_brewer(palette = "Set1") +
+  theme(
+   panel.background = element_rect(fill = "#C3C3C3"),
+    legend.key = element_rect(fill = "#C3C3C3")
+    ) +
+  xlab("Element") +
+  ylab("Shale (PAAS) normalized concentration")
+cement_aio
+```
+
+``` {r rerun data spider}
 cement_aio <- cement_avg %>% filter(element != "Lu")
-cement_aio <- ggplot(cement_aio, aes(x = element, y = avg, color = Cement)) + #attempt at making a single spider plot with all samples
+cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) + 
   geom_point() +
   geom_line(aes(group = Cement), size = 1) +
   scale_y_log10() +
