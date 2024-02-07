@@ -214,15 +214,13 @@ ggplot(data = combo_anomaly, aes(x = Cement, y = Ce_anomaly, fill = method, colo
 ```
 
 ```{r Y/Ho ratios}
-ggplot(data = combo_anomaly, aes(x = Cement, y = Ce_anomaly, fill = method, color = method)) +
-  annotate("rect", xmin= -Inf, xmax= Inf, ymin= 1.2 , ymax= Inf, alpha=0.2, fill="red") +
-  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0.8, alpha = 0.2, fill = "blue") +
+ggplot(data = combo_anomaly, aes(x = Cement, y = Y_Ho_ratio, fill = method, color = method)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = 36, ymax = Inf, alpha = 0.2, fill = "blue") +
   geom_boxplot() +
   scale_color_manual(name = "Method", values = c("darkgreen", "darkorange3")) +
   scale_fill_brewer(name = "Method", palette = "Set2") +
-  geom_hline(yintercept = 0.8, color = "blue") +
-  geom_hline(yintercept = 1.2, color = "red") +
+  geom_hline(yintercept = 36, color = "blue") +
   xlab("Texture") +
-  ylab("Ce Anomaly")
+  ylab("Y/Ho Ratio")
   
 ```
