@@ -9,20 +9,21 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(readxl)
+library(tidyverse) #for working with data
+library(readxl) #for importing excel sheets
 ```
 
 ```{r}
-orig_data <- read_xlsx("ree_data_r.xlsx", 1)
-rerun_data <- read_xlsx("jan2024 data.xlsx",4)
-dil_data <- read_xlsx("jan2024 data DILUTED.xlsx",4)
-cement_data <- read_excel("ree_data_r.xlsx", 2)
+orig_data <- read_xlsx("ree_data_r.xlsx", 1) #data from single leach
+rerun_data <- read_xlsx("jan2024 data.xlsx",4) #data for sequential leach
+dil_data <- read_xlsx("jan2024 data DILUTED.xlsx",4) #data for diluted seq leach rerun
+cement_data <- read_excel("ree_data_r.xlsx", 2) #cement type data for all samples
 ```
 
 ## Data Wrangle
 
 ```{r reorganize data tables}
+#rename columns to just element
 orig_data <- orig_data %>%
   rename(Sample = 1, Na = 2, Mg  = 3, K = 4, Ca = 5, V = 6, Cr = 7, Fe = 8, Mn = 9, Cu = 10, Zn = 11, Rb = 12, Sr = 13, Y = 14, Mo = 15, Ba = 16, La = 17, Ce = 18, Pr = 19, Nd = 20, Sm = 21, Eu = 22, Gd = 23, Dy = 24, Ho = 25, Er = 26, Tm = 27, Yb = 28, Lu = 29, Pb = 30, U = 31)
 
@@ -32,8 +33,8 @@ rerun_data <- rerun_data[-1,] %>%
 dil_data <- dil_data[-1,] %>%
   rename(Sample = 1, Na = 2, Mg  = 3, K = 4, Ca = 5, V = 6, Cr = 7, Fe = 8, Mn = 9, Cu = 10, Zn = 11, Rb = 12, Sr = 13, Y = 14, Mo = 15, Ba = 16, La = 17, Ce = 18, Pr = 19, Nd = 20, Sm = 21, Eu = 22, Gd = 23, Dy = 24, Ho = 25, Er = 26, Tm = 27, Yb = 28, Lu = 29, Pb = 30, U = 31)
 
-all_rerun <- bind_rows(rerun_data, dil_data) %>%
-  mutate_at(2:31, as.numeric)
+all_rerun <- bind_rows(rerun_data, dil_data) %>% #combine both seq leach datasets
+  mutate_at(2:31, as.numeric) #convert data from character to numeric
 ```
 
 ## Normalization
@@ -75,6 +76,7 @@ normal <- tibble::rownames_to_column(normal, "element") %>%
 ## Anomalies
 
 ```{r orig anomaly calculations}
+#calculate anomalies, formulas from Tostevin et al. 2016
 orig_anomaly <- orig_normalize %>%
   mutate(
     Ce_anomaly = Ce/(Pr^2/Nd),
@@ -82,6 +84,7 @@ orig_anomaly <- orig_normalize %>%
     Eu_anomaly = (2*Eu)/(Sm  + Gd),
     BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5))
 
+#generate summary statistics
 orig_anomaly_summ <- orig_anomaly %>%
   group_by(Cement) %>%
   summarise(
@@ -105,6 +108,7 @@ orig_anomaly_summ <- orig_anomaly %>%
 ```
 
 ```{r rerun anomaly calculations}
+#calculate anomalies, formulas from Tostevin et al. 2016
 anomaly <- normalize %>%
   mutate(
     Ce_anomaly = Ce/(Pr^2/Nd),
@@ -112,6 +116,7 @@ anomaly <- normalize %>%
     Eu_anomaly = (2*Eu)/(Sm  + Gd),
     BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) 
 
+#generate summary statistics
 anomaly_summ <- anomaly %>%
   group_by(Cement) %>%
   summarise(
@@ -134,7 +139,7 @@ anomaly_summ <- anomaly %>%
   )
 ```
 
-```{r combine anomaly data from both runs}
+```{r combine anomaly data from both methods}
 combo_anomaly <- anomaly %>%
   mutate(method = "Sequential leach")
 combo_anomaly <- orig_anomaly %>%
@@ -145,7 +150,7 @@ combo_anomaly <- orig_anomaly %>%
 
 #Calculate averages
 
-```{r orig cement averages}
+```{r orig elemental conc. averages per cement}
 orig_cement_avg <- orig_normal %>%
   group_by(Cement, element) %>%
   summarise(
@@ -156,7 +161,7 @@ orig_cement_avg <- orig_normal %>%
 orig_cement_avg$Cement <- factor(orig_cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete"))
 ```
 
-```{r rerun cement averages}
+```{r rerun elemental conc. averages per cement}
 cement_avg <- normal %>%
   group_by(Cement, element) %>%
   summarise(
@@ -169,7 +174,7 @@ cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "
 
 ## Plots
 ``` {r orig data spider}
-cement_aio <- orig_cement_avg %>% filter(element != "Lu")
+cement_aio <- orig_cement_avg %>% filter(element != "Lu") #filter out Lu due to conc. lower than detection limit
 cement_aio <- ggplot(cement_aio, aes(x = element, y = avg, color = Cement)) + 
   geom_point() +
   geom_line(aes(group = Cement), size = 1) +
