@@ -80,7 +80,9 @@ orig_anomaly <- orig_normalize %>%
     Ce_anomaly = Ce/(Pr^2/Nd),
     Y_Ho_ratio = orig_data$Y/orig_data$Ho,
     Eu_anomaly = (2*Eu)/(Sm  + Gd),
-    BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) %>%
+    BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5))
+
+orig_anomaly_summ <- orig_anomaly %>%
   group_by(Cement) %>%
   summarise(
     Ce_mean = mean(Ce_anomaly),
@@ -100,7 +102,6 @@ orig_anomaly <- orig_normalize %>%
     BSI_max = max(BSI),
     BSI_min = min(BSI)
   )
-orig_anomaly
 ```
 
 ```{r rerun anomaly calculations}
@@ -109,7 +110,9 @@ anomaly <- normalize %>%
     Ce_anomaly = Ce/(Pr^2/Nd),
     Y_Ho_ratio = all_rerun$Y/all_rerun$Ho,
     Eu_anomaly = (2*Eu)/(Sm  + Gd),
-    BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) %>%
+    BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) 
+
+anomaly_summ <- anomaly %>%
   group_by(Cement) %>%
   summarise(
     Ce_mean = mean(Ce_anomaly),
@@ -129,7 +132,15 @@ anomaly <- normalize %>%
     BSI_max = max(BSI),
     BSI_min = min(BSI)
   )
-anomaly
+```
+
+```{r combine anomaly data from both runs}
+combo_anomaly <- anomaly %>%
+  mutate(method = "Sequential leach")
+combo_anomaly <- orig_anomaly %>%
+  mutate(method = "Single leach") %>%
+  bind_rows(combo_anomaly) %>%
+  mutate(method = factor(method, levels = c("Single leach", "Sequential leach")))
 ```
 
 #Calculate averages
@@ -174,7 +185,6 @@ cement_aio
 ```
 
 ``` {r rerun data spider}
-cement_aio <- cement_avg %>% filter(element != "Lu")
 cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) + 
   geom_point() +
   geom_line(aes(group = Cement), size = 1) +
@@ -187,4 +197,32 @@ cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) +
   xlab("Element") +
   ylab("Shale (PAAS) normalized concentration")
 cement_aio
+```
+
+```{r ce anomalies}
+ggplot(data = combo_anomaly, aes(x = Cement, y = Ce_anomaly, fill = method, color = method)) +
+  annotate("rect", xmin= -Inf, xmax= Inf, ymin= 1.2 , ymax= Inf, alpha=0.2, fill="red") +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0.8, alpha = 0.2, fill = "blue") +
+  geom_boxplot() +
+  scale_color_manual(name = "Method", values = c("darkgreen", "darkorange3")) +
+  scale_fill_brewer(name = "Method", palette = "Set2") +
+  geom_hline(yintercept = 0.8, color = "blue") +
+  geom_hline(yintercept = 1.2, color = "red") +
+  xlab("Texture") +
+  ylab("Ce Anomaly")
+  
+```
+
+```{r Y/Ho ratios}
+ggplot(data = combo_anomaly, aes(x = Cement, y = Ce_anomaly, fill = method, color = method)) +
+  annotate("rect", xmin= -Inf, xmax= Inf, ymin= 1.2 , ymax= Inf, alpha=0.2, fill="red") +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0.8, alpha = 0.2, fill = "blue") +
+  geom_boxplot() +
+  scale_color_manual(name = "Method", values = c("darkgreen", "darkorange3")) +
+  scale_fill_brewer(name = "Method", palette = "Set2") +
+  geom_hline(yintercept = 0.8, color = "blue") +
+  geom_hline(yintercept = 1.2, color = "red") +
+  xlab("Texture") +
+  ylab("Ce Anomaly")
+  
 ```
