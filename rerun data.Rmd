@@ -27,10 +27,10 @@ cement_data <- read_excel("ree_data_r.xlsx", 2) #cement type data for all sample
 orig_data <- orig_data %>%
   rename(Sample = 1, Na = 2, Mg  = 3, K = 4, Ca = 5, V = 6, Cr = 7, Fe = 8, Mn = 9, Cu = 10, Zn = 11, Rb = 12, Sr = 13, Y = 14, Mo = 15, Ba = 16, La = 17, Ce = 18, Pr = 19, Nd = 20, Sm = 21, Eu = 22, Gd = 23, Dy = 24, Ho = 25, Er = 26, Tm = 27, Yb = 28, Lu = 29, Pb = 30, U = 31)
 
-rerun_data <- rerun_data[-1,] %>%
+rerun_data <- rerun_data[-1,] %>% #removes first line with no values
   rename(Sample = 1, Na = 2, Mg  = 3, K = 4, Ca = 5, V = 6, Cr = 7, Fe = 8, Mn = 9, Cu = 10, Zn = 11, Rb = 12, Sr = 13, Y = 14, Mo = 15, Ba = 16, La = 17, Ce = 18, Pr = 19, Nd = 20, Sm = 21, Eu = 22, Gd = 23, Dy = 24, Ho = 25, Er = 26, Tm = 27, Yb = 28, Lu = 29, Pb = 30, U = 31)
 
-dil_data <- dil_data[-1,] %>%
+dil_data <- dil_data[-1,] %>% #removes first line with no values
   rename(Sample = 1, Na = 2, Mg  = 3, K = 4, Ca = 5, V = 6, Cr = 7, Fe = 8, Mn = 9, Cu = 10, Zn = 11, Rb = 12, Sr = 13, Y = 14, Mo = 15, Ba = 16, La = 17, Ce = 18, Pr = 19, Nd = 20, Sm = 21, Eu = 22, Gd = 23, Dy = 24, Ho = 25, Er = 26, Tm = 27, Yb = 28, Lu = 29, Pb = 30, U = 31)
 
 all_rerun <- bind_rows(rerun_data, dil_data) %>% #combine both seq leach datasets
@@ -139,15 +139,6 @@ anomaly_summ <- anomaly %>%
   )
 ```
 
-```{r combine anomaly data from both methods}
-combo_anomaly <- anomaly %>%
-  mutate(method = "Sequential leach")
-combo_anomaly <- orig_anomaly %>%
-  mutate(method = "Single leach") %>%
-  bind_rows(combo_anomaly) %>%
-  mutate(method = factor(method, levels = c("Single leach", "Sequential leach")))
-```
-
 #Calculate averages
 
 ```{r orig elemental conc. averages per cement}
@@ -170,6 +161,29 @@ cement_avg <- normal %>%
     sd = sd(Value)
   )
 cement_avg$Cement <- factor(cement_avg$Cement, levels = c("Spar", "Microspar", "Manganese", "Micrite", "Micrite (SSF)", "Micrite (spicule)", "Microbial", "Microbial (SSF)", "Laminar Microbial", "Laminar Microbial (Strom)", "Laminar Microbial (sponge)", "Laminar Calcrete", "Micrite Above", "Micrite Below"))
+```
+
+## Combine datasets
+
+```{r combine element averages from both methods}
+combo_data <- cement_avg %>%
+  mutate(method = "Sequential leach") #%>%
+#  mutate_at(2:31, as.numeric)
+combo_data <- orig_cement_avg %>%
+  mutate(method = "Single leach") %>%
+  #mutate_at(2:31, as.numeric) %>%
+  bind_rows(combo_data) %>%
+  mutate(method = factor(method, levels = c("Single leach", "Sequential leach")))
+```
+
+
+```{r combine anomaly data from both methods}
+combo_anomaly <- anomaly %>%
+  mutate(method = "Sequential leach")
+combo_anomaly <- orig_anomaly %>%
+  mutate(method = "Single leach") %>%
+  bind_rows(combo_anomaly) %>%
+  mutate(method = factor(method, levels = c("Single leach", "Sequential leach")))
 ```
 
 ## Plots
@@ -202,6 +216,17 @@ cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) +
   xlab("Element") +
   ylab("Shale (PAAS) normalized concentration")
 cement_aio
+```
+
+```{r combo spider plot}
+ggplot(combo_data, aes(x = element, y = avg, color = method)) +
+  geom_point() +
+  geom_line(aes(group = method), size = 1) +
+  scale_y_log10() +
+  facet_wrap(vars(Cement)) +
+  scale_color_brewer(name = "Method", palette = "Set2") +
+  xlab("Element") +
+  ylab("Shale (PAAS) normalized concentration")
 ```
 
 ```{r ce anomalies}
