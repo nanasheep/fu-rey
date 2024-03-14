@@ -219,7 +219,22 @@ cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) +
 cement_aio
 ```
 
-```{r combo spider plot}
+```{r combo spider plot by run}
+ggplot(combo_data, aes(x = element, y = avg, color = Cement)) +
+  geom_point() +
+  geom_line(aes(group = Cement), size = 1) +
+  scale_y_log10() +
+  facet_wrap(vars(method)) +
+  scale_color_brewer(name = "Cement", palette = "Set1") +
+  theme(
+   panel.background = element_rect(fill = "#C3C3C3"),
+    legend.key = element_rect(fill = "#C3C3C3")
+    ) +
+  xlab("Element") +
+  ylab("Shale (PAAS) normalized concentration")
+```
+
+```{r combo spider plot by cement}
 ggplot(combo_data, aes(x = element, y = avg, color = method)) +
   geom_point() +
   geom_line(aes(group = method), size = 1) +
