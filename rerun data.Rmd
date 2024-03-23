@@ -3,6 +3,8 @@ title: "Rerun"
 author: "Clara Wong"
 date: "2024-01-29"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Import and Setup
@@ -269,4 +271,19 @@ ggplot(data = combo_anomaly, aes(x = Cement, y = Y_Ho_ratio, fill = method, colo
   xlab("Texture") +
   ylab("Y/Ho Ratio")
   
+```
+
+## Statistical Analysis
+```{r Ce methods ANOVA}
+ce_aov <- aov(data = combo_anomaly, Ce_anomaly ~ method)
+summary(ce_aov)
+```
+
+```{r Ce cements ANOVA and Tukey HSD}
+ce_aov <- aov(data = combo_anomaly, Ce_anomaly ~ Cement) #ANOVA
+summary(ce_aov)
+
+tukey <- TukeyHSD(ce_aov)
+tukey_results <- as.data.frame(tukey[1]) %>%
+  filter(Cement.p.adj < 0.05)
 ```
