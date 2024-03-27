@@ -65,7 +65,18 @@ normalize <- all_rerun %>%
   select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non REY elements
   mutate(La = La/44.56, Ce = Ce/88.25, Pr = Pr/10.15, Nd = Nd/37.32, Sm = Sm/6.884, Eu = Eu/1.215, Gd = Gd/6.043, Dy = Dy/5.325, Y = Y/27.31, Ho = Ho/1.052, Er = Er/3.075, Tm = Tm/0.4510, Yb = Yb/3.012, Lu = Lu/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
     select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non normalized values
-  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
+  left_join(cement_data, by = c("Sample" = "Sample")) %>%#attach cement to each observation
+  mutate(Sample_group = case_when( #add new column for grouping replicates by sample name
+   str_detect(Sample, " 1 3") == TRUE ~ "FUWM 1 3",
+   str_detect(Sample, " 3.5 H 1") == TRUE ~ "FUWM 3.5 H 1",
+   str_detect(Sample, " 3.5 H 2") == TRUE ~ "FUWM 3.5 H 2",
+   str_detect(Sample, " 8.5 2") == TRUE ~ "FUWM 8.5 2",
+   str_detect(Sample, " 8.5 3") == TRUE ~ "FUWM 8.5 3",
+   str_detect(Sample, " 16 T 4") == TRUE ~ "FUWM 16 T 4",
+   str_detect(Sample, " 16 T 5") == TRUE ~ "FUWM 16 T 5",
+   .default = NA
+  )) %>%
+  mutate(run = case_when(str_detect(Sample, "dil") == TRUE ~ "Diluted", .default = "Original")) #add new column to label diluted replicates and original replicates
 
 
 normal <- data.frame(t(normalize[2:15]))#transpose and remove first row containing sample names and cement row
@@ -85,6 +96,7 @@ normal <- tibble::rownames_to_column(normal, "element") %>%
    .default = NA
   )) %>%
   mutate(run = case_when(str_detect(Sample, "dil") == TRUE ~ "Diluted", .default = "Original")) #add new column to label diluted replicates and original replicates
+
 ```
 
 ## Anomalies
