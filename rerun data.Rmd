@@ -99,6 +99,14 @@ normal <- tibble::rownames_to_column(normal, "element") %>%
 
 ```
 
+## Function to remove non-diluted replicates from seq. leach data
+```{r}
+dil_remove <- function(data) {
+  data %>%
+    filter(is.na(Sample_group) | run == "Diluted") #keeps rows that are either from single leach or the diluted sequential run
+}
+```
+
 ## Anomalies
 
 ```{r orig anomaly calculations}
@@ -297,7 +305,8 @@ ggplot(data = combo_anomaly, aes(x = Cement, y = Y_Ho_ratio, fill = method, colo
 ```
 
 ```{r Y/Ho over Ce/Ce*}
-ggplot(combo_anomaly, aes(x = Ce_anomaly, y = Y_Ho_ratio, color = Cement)) +
+dil_remove(combo_anomaly) %>%
+ggplot(aes(x = Ce_anomaly, y = Y_Ho_ratio, color = Cement)) +
   geom_point() +
   facet_wrap(vars(method)) +
   theme(
