@@ -39,6 +39,31 @@ all_rerun <- bind_rows(rerun_data, dil_data) %>% #combine both seq leach dataset
   mutate_at(2:31, as.numeric) #convert data from character to numeric
 ```
 
+## Functions to label and/or remove non-diluted replicates from seq. leach data
+```{r label replicated data}
+replic_label <- function(data) {
+  data %>%
+  mutate(Sample_group = case_when( #add new column for grouping replicates by sample name
+   str_detect(Sample, " 1 3") == TRUE ~ "FUWM 1 3",
+   str_detect(Sample, " 3.5 H 1") == TRUE ~ "FUWM 3.5 H 1",
+   str_detect(Sample, " 3.5 H 2") == TRUE ~ "FUWM 3.5 H 2",
+   str_detect(Sample, " 8.5 2") == TRUE ~ "FUWM 8.5 2",
+   str_detect(Sample, " 8.5 3") == TRUE ~ "FUWM 8.5 3",
+   str_detect(Sample, " 16 T 4") == TRUE ~ "FUWM 16 T 4",
+   str_detect(Sample, " 16 T 5") == TRUE ~ "FUWM 16 T 5",
+   .default = NA
+  )) %>%
+  mutate(run = case_when(str_detect(Sample, "dil") == TRUE ~ "Diluted", .default = "Original")) #add new column to label diluted replicates and original replicates
+}
+```
+
+```{r remove non-diluted replicates}
+dil_remove <- function(data) {
+  data %>%
+    filter(is.na(Sample_group) | run == "Diluted") #keeps rows that are either from single leach or the diluted sequential run
+}
+```
+
 ## Normalization
 
 ```{r orig paas normalized pourmand et al 2012}
@@ -65,47 +90,17 @@ normalize <- all_rerun %>%
   select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non REY elements
   mutate(La = La/44.56, Ce = Ce/88.25, Pr = Pr/10.15, Nd = Nd/37.32, Sm = Sm/6.884, Eu = Eu/1.215, Gd = Gd/6.043, Dy = Dy/5.325, Y = Y/27.31, Ho = Ho/1.052, Er = Er/3.075, Tm = Tm/0.4510, Yb = Yb/3.012, Lu = Lu/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
     select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non normalized values
-  left_join(cement_data, by = c("Sample" = "Sample")) %>%#attach cement to each observation
-  mutate(Sample_group = case_when( #add new column for grouping replicates by sample name
-   str_detect(Sample, " 1 3") == TRUE ~ "FUWM 1 3",
-   str_detect(Sample, " 3.5 H 1") == TRUE ~ "FUWM 3.5 H 1",
-   str_detect(Sample, " 3.5 H 2") == TRUE ~ "FUWM 3.5 H 2",
-   str_detect(Sample, " 8.5 2") == TRUE ~ "FUWM 8.5 2",
-   str_detect(Sample, " 8.5 3") == TRUE ~ "FUWM 8.5 3",
-   str_detect(Sample, " 16 T 4") == TRUE ~ "FUWM 16 T 4",
-   str_detect(Sample, " 16 T 5") == TRUE ~ "FUWM 16 T 5",
-   .default = NA
-  )) %>%
-  mutate(run = case_when(str_detect(Sample, "dil") == TRUE ~ "Diluted", .default = "Original")) #add new column to label diluted replicates and original replicates
-
+  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
 
 normal <- data.frame(t(normalize[2:15]))#transpose and remove first row containing sample names and cement row
 colnames(normal) <- all_rerun$Sample #rename column names with sample names
 normal <- tibble::rownames_to_column(normal, "element") %>%
   mutate(element = fct_inorder(element)) %>% #order elements
   pivot_longer(-element, names_to = "Sample", values_to = "Value") %>% #pivot data to have each element value as observation
-  left_join(cement_data, by = c("Sample" = "Sample")) %>% #attach cement to each observation 
-  mutate(Sample_group = case_when( #add new column for grouping replicates by sample name
-   str_detect(Sample, " 1 3") == TRUE ~ "FUWM 1 3",
-   str_detect(Sample, " 3.5 H 1") == TRUE ~ "FUWM 3.5 H 1",
-   str_detect(Sample, " 3.5 H 2") == TRUE ~ "FUWM 3.5 H 2",
-   str_detect(Sample, " 8.5 2") == TRUE ~ "FUWM 8.5 2",
-   str_detect(Sample, " 8.5 3") == TRUE ~ "FUWM 8.5 3",
-   str_detect(Sample, " 16 T 4") == TRUE ~ "FUWM 16 T 4",
-   str_detect(Sample, " 16 T 5") == TRUE ~ "FUWM 16 T 5",
-   .default = NA
-  )) %>%
-  mutate(run = case_when(str_detect(Sample, "dil") == TRUE ~ "Diluted", .default = "Original")) #add new column to label diluted replicates and original replicates
-
+  left_join(cement_data, by = c("Sample" = "Sample")) 
+#attach cement to each observation 
 ```
 
-## Function to remove non-diluted replicates from seq. leach data
-```{r}
-dil_remove <- function(data) {
-  data %>%
-    filter(is.na(Sample_group) | run == "Diluted") #keeps rows that are either from single leach or the diluted sequential run
-}
-```
 
 ## Anomalies
 
@@ -210,7 +205,6 @@ combo_data <- orig_cement_avg %>%
   mutate(method = factor(method, levels = c("Single leach", "Sequential leach")))
 ```
 
-
 ```{r combine anomaly data from both methods}
 combo_anomaly <- anomaly %>%
   mutate(method = "Sequential leach")
@@ -222,8 +216,8 @@ combo_anomaly <- orig_anomaly %>%
 
 ## Plots
 ``` {r orig data spider}
-cement_aio <- orig_cement_avg %>% filter(element != "Lu") #filter out Lu due to conc. lower than detection limit
-cement_aio <- ggplot(cement_aio, aes(x = element, y = avg, color = Cement)) + 
+orig_cement_avg %>% filter(element != "Lu") %>% #filter out Lu due to conc. lower than detection limit
+ggplot(aes(x = element, y = avg, color = Cement)) + 
   geom_point() +
   geom_line(aes(group = Cement), size = 1) +
   scale_y_log10() +
@@ -234,11 +228,10 @@ cement_aio <- ggplot(cement_aio, aes(x = element, y = avg, color = Cement)) +
     ) +
   xlab("Element") +
   ylab("Shale (PAAS) normalized concentration")
-cement_aio
 ```
 
 ``` {r rerun data spider}
-cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) + 
+ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) + 
   geom_point() +
   geom_line(aes(group = Cement), size = 1) +
   scale_y_log10() +
@@ -249,7 +242,6 @@ cement_aio <- ggplot(cement_avg, aes(x = element, y = avg, color = Cement)) +
     ) +
   xlab("Element") +
   ylab("Shale (PAAS) normalized concentration")
-cement_aio
 ```
 
 ```{r combo spider plot by run}
@@ -335,12 +327,12 @@ ggplot(aes(x = element, y = Value, color = run)) +
 
 ## Statistical Analysis
 ```{r Ce methods ANOVA}
-ce_aov <- aov(data = combo_anomaly, Ce_anomaly ~ method)
+ce_aov <- aov(data = dil_remove(combo_anomaly), Ce_anomaly ~ method)
 summary(ce_aov)
 ```
 
 ```{r Ce cements ANOVA and Tukey HSD}
-ce_aov <- aov(data = combo_anomaly, Ce_anomaly ~ Cement) #ANOVA
+ce_aov <- aov(data = dil_remove(combo_anomaly), Ce_anomaly ~ Cement) #ANOVA
 summary(ce_aov)
 
 tukey <- TukeyHSD(ce_aov)
