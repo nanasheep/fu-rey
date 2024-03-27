@@ -73,7 +73,7 @@ orig_normalize <- orig_data %>%
   mutate(La = La/44.56, Ce = Ce/88.25, Pr = Pr/10.15, Nd = Nd/37.32, Sm = Sm/6.884, Eu = Eu/1.215, Gd = Gd/6.043, Dy = Dy/5.325, Y = Y/27.31, Ho = Ho/1.052, Er = Er/3.075, Tm = Tm/0.4510, Yb = Yb/3.012, Lu = Lu/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
     select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non normalized values
   left_join(cement_data, by = c("Sample" = "Sample")) %>% #attach cement to each observation 
-mutate(Lu = NA) #Lu was not detected, change 0 to NA
+mutate(Lu = NA) #Lu was not detected, change 0 to NA 
 
 
 orig_normal <- data.frame(t(orig_normalize[2:15]))#transpose and remove first row containing sample names and cement row
@@ -90,15 +90,17 @@ normalize <- all_rerun %>%
   select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non REY elements
   mutate(La = La/44.56, Ce = Ce/88.25, Pr = Pr/10.15, Nd = Nd/37.32, Sm = Sm/6.884, Eu = Eu/1.215, Gd = Gd/6.043, Dy = Dy/5.325, Y = Y/27.31, Ho = Ho/1.052, Er = Er/3.075, Tm = Tm/0.4510, Yb = Yb/3.012, Lu = Lu/0.4386) %>% #normalize values using PAAS data from Pourmand et al. 2012
     select("Sample", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Dy", "Y", "Ho", "Er", "Tm", "Yb", "Lu") %>% #filter out non normalized values
-  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
+  left_join(cement_data, by = c("Sample" = "Sample")) %>% #attach cement to each observation
+  replic_label()
 
 normal <- data.frame(t(normalize[2:15]))#transpose and remove first row containing sample names and cement row
 colnames(normal) <- all_rerun$Sample #rename column names with sample names
 normal <- tibble::rownames_to_column(normal, "element") %>%
   mutate(element = fct_inorder(element)) %>% #order elements
   pivot_longer(-element, names_to = "Sample", values_to = "Value") %>% #pivot data to have each element value as observation
-  left_join(cement_data, by = c("Sample" = "Sample")) 
+  left_join(cement_data, by = c("Sample" = "Sample"))  %>%
 #attach cement to each observation 
+  replic_label()
 ```
 
 
@@ -143,7 +145,8 @@ anomaly <- normalize %>%
     Ce_anomaly = Ce/(Pr^2/Nd),
     Y_Ho_ratio = all_rerun$Y/all_rerun$Ho,
     Eu_anomaly = (2*Eu)/(Sm  + Gd),
-    BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) 
+    BSI = (2*(Sm + Gd + Dy)/3)/((La +Pr + Nd)/3+(Ho + Er +Tm +Yb +Lu)/5)) %>%
+  dil_remove()
 
 #generate summary statistics
 anomaly_summ <- anomaly %>%
@@ -183,6 +186,7 @@ orig_cement_avg$Cement <- factor(orig_cement_avg$Cement, levels = c("Spar", "Mic
 
 ```{r rerun elemental conc. averages per cement}
 cement_avg <- normal %>%
+  dil_remove() %>%
   group_by(Cement, element) %>%
   summarise(
     n = n(),
