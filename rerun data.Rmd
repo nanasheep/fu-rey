@@ -73,7 +73,18 @@ colnames(normal) <- all_rerun$Sample #rename column names with sample names
 normal <- tibble::rownames_to_column(normal, "element") %>%
   mutate(element = fct_inorder(element)) %>% #order elements
   pivot_longer(-element, names_to = "Sample", values_to = "Value") %>% #pivot data to have each element value as observation
-  left_join(cement_data, by = c("Sample" = "Sample")) #attach cement to each observation
+  left_join(cement_data, by = c("Sample" = "Sample")) %>% #attach cement to each observation 
+  mutate(Sample_group = case_when( #add new column for grouping replicates by sample name
+   str_detect(Sample, " 1 3") == TRUE ~ "FUWM 1 3",
+   str_detect(Sample, " 3.5 H 1") == TRUE ~ "FUWM 3.5 H 1",
+   str_detect(Sample, " 3.5 H 2") == TRUE ~ "FUWM 3.5 H 2",
+   str_detect(Sample, " 8.5 2") == TRUE ~ "FUWM 8.5 2",
+   str_detect(Sample, " 8.5 3") == TRUE ~ "FUWM 8.5 3",
+   str_detect(Sample, " 16 T 4") == TRUE ~ "FUWM 16 T 4",
+   str_detect(Sample, " 16 T 5") == TRUE ~ "FUWM 16 T 5",
+   .default = NA
+  )) %>%
+  mutate(run = case_when(str_detect(Sample, "dil") == TRUE ~ "Diluted", .default = "Original")) #add new column to label diluted replicates and original replicates
 ```
 
 ## Anomalies
@@ -273,6 +284,34 @@ ggplot(data = combo_anomaly, aes(x = Cement, y = Y_Ho_ratio, fill = method, colo
   
 ```
 
+```{r Y/Ho over Ce/Ce*}
+ggplot(combo_anomaly, aes(x = Ce_anomaly, y = Y_Ho_ratio, color = Cement)) +
+  geom_point() +
+  facet_wrap(vars(method)) +
+  theme(
+   panel.background = element_rect(fill = "#C3C3C3"),
+    legend.key = element_rect(fill = "#C3C3C3")
+    ) +
+  scale_color_brewer(palette = "Set1") +
+  xlab("Ce/Ce*") +
+  ylab("Y/Ho Ratio")
+
+```
+
+```{r comparing rerun replicates spiders}
+normal %>%
+  drop_na(Sample_group) %>%
+ggplot(aes(x = element, y = Value, color = run)) +
+  geom_point() +
+  geom_line(aes(group = Sample)) +
+  facet_wrap(vars(Sample_group)) +
+  scale_color_brewer(palette = "Set1")+
+  theme(
+   panel.background = element_rect(fill = "#C3C3C3"),
+    legend.key = element_rect(fill = "#C3C3C3")
+    )
+```
+
 ## Statistical Analysis
 ```{r Ce methods ANOVA}
 ce_aov <- aov(data = combo_anomaly, Ce_anomaly ~ method)
@@ -285,5 +324,5 @@ summary(ce_aov)
 
 tukey <- TukeyHSD(ce_aov)
 tukey_results <- as.data.frame(tukey[1]) %>%
-  filter(Cement.p.adj < 0.05)
+  select(Cement.p.adj)
 ```
